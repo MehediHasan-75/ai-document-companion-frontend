@@ -22,3 +22,25 @@
 body {
   transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* Styles for finalised assistant messages rendered via dangerouslySetInnerHTML */
+.rich-content img {
+  max-width: 100%;
+  border-radius: 0.5rem;
+  border: 1px solid #e4e4e7;
+  margin: 0.75rem 0;
+  display: block;
+}
+
+.dark .rich-content img {
+  border-color: #3f3f46;
+}
+
+.rich-content p {
+  line-height: 1.7;
+  margin-bottom: 0.5rem;
+}
+
+.rich-content p:last-child {
+  margin-bottom: 0;
+}

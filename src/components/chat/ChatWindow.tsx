@@ -17,6 +17,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
     messages,
     isStreaming,
     statusLabel,
+    statusHistory,
     partialContent,
     setMessages,
     sendMessage,
@@ -67,6 +68,7 @@ export function ChatWindow({ conversationId }: ChatWindowProps) {
           <StreamingMessage
             content={partialContent}
             statusLabel={statusLabel}
+            statusHistory={statusHistory}
           />
         )}
 
