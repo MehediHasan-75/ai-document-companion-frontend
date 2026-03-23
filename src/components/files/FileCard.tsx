@@ -122,6 +122,14 @@ export function FileCard({ file }: FileCardProps) {
                   {file.image_count} {file.image_count === 1 ? "image" : "images"}
                 </span>
               )}
+              {file.table_count != null && file.table_count > 0 && (
+                <span className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M3 14h18M10 3v18M3 6a3 3 0 013-3h12a3 3 0 013 3v12a3 3 0 01-3 3H6a3 3 0 01-3-3V6z" />
+                  </svg>
+                  {file.table_count} {file.table_count === 1 ? "table" : "tables"}
+                </span>
+              )}
               {file.file_size != null && (
                 <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
                   {file.file_size < 1024 * 1024

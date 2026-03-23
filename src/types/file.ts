@@ -12,6 +12,7 @@ export interface Document {
   page_count?: number;
   chunk_count?: number;
   image_count?: number;
+  table_count?: number;
   file_size?: number; // bytes
 }
 
