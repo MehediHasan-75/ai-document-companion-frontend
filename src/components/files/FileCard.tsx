@@ -54,7 +54,7 @@ export function FileCard({ file }: FileCardProps) {
         <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 truncate">
           {file.filename}
         </p>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           <StatusBadge status={status} />
           {error && (
             <span className="text-[11px] text-red-500 truncate">{error}</span>
@@ -63,6 +63,43 @@ export function FileCard({ file }: FileCardProps) {
             {new Date(file.created_at).toLocaleDateString()}
           </span>
         </div>
+
+        {/* Processing stats — shown once ready */}
+        {status === "processed" && (
+          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+            {file.page_count != null && (
+              <span className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {file.page_count} {file.page_count === 1 ? "page" : "pages"}
+              </span>
+            )}
+            {file.chunk_count != null && (
+              <span className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h10" />
+                </svg>
+                {file.chunk_count} chunks
+              </span>
+            )}
+            {file.image_count != null && file.image_count > 0 && (
+              <span className="flex items-center gap-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {file.image_count} {file.image_count === 1 ? "image" : "images"}
+              </span>
+            )}
+            {file.file_size != null && (
+              <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                {file.file_size < 1024 * 1024
+                  ? `${Math.round(file.file_size / 1024)} KB`
+                  : `${(file.file_size / (1024 * 1024)).toFixed(1)} MB`}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Actions */}

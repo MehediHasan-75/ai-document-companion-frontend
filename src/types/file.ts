@@ -8,6 +8,11 @@ export interface Document {
   status: FileStatus;
   type: FileType;
   created_at: string;
+  // populated by backend once processing completes
+  page_count?: number;
+  chunk_count?: number;
+  image_count?: number;
+  file_size?: number; // bytes
 }
 
 export interface FileListResponse {
