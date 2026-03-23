@@ -4,7 +4,7 @@ import { conversationsApi } from "@/api/conversations";
 import { useConversationStore } from "@/store/conversationStore";
 
 export function useConversations() {
-  const { conversations, setConversations, addConversation, removeConversation } =
+  const { conversations, setConversations, addConversation, removeConversation, renameConversation } =
     useConversationStore();
   const router = useRouter();
 
@@ -35,5 +35,14 @@ export function useConversations() {
     }
   }
 
-  return { conversations, createConversation, deleteConversation };
+  async function renameConversationById(id: string, title: string) {
+    try {
+      await conversationsApi.rename(id, title);
+      renameConversation(id, title);
+    } catch {
+      // silent — optimistic update already skipped
+    }
+  }
+
+  return { conversations, createConversation, deleteConversation, renameConversation: renameConversationById };
 }

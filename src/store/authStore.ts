@@ -28,7 +28,15 @@ export const useAuthStore = create<AuthStore>()(
       name: "auth",
       // Re-sync cookie whenever the persisted store rehydrates (page refresh)
       onRehydrateStorage: () => (state) => {
-        if (state?.token) setToken(state.token);
+        if (state?.token) {
+          setToken(state.token);
+          // Refresh user profile from API to avoid stale persisted data
+          import("@/api/auth").then(({ authApi }) => {
+            authApi.me().then((user) => {
+              useAuthStore.setState({ user });
+            }).catch(() => {/* token may be expired — proxy will redirect */});
+          });
+        }
       },
     }
   )

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { useConversations } from "@/hooks/useConversations";
 import { useConversationStore } from "@/store/conversationStore";
 
@@ -12,8 +13,12 @@ interface ConversationSidebarProps {
 export function ConversationSidebar({ onNavigate }: ConversationSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { conversations, createConversation, deleteConversation } = useConversations();
+  const { conversations, createConversation, deleteConversation, renameConversation } = useConversations();
   const setActiveId = useConversationStore((s) => s.setActiveId);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
   async function handleNew() {
     const id = await createConversation();
@@ -22,6 +27,23 @@ export function ConversationSidebar({ onNavigate }: ConversationSidebarProps) {
       router.push(`/chat/${id}`);
       onNavigate?.();
     }
+  }
+
+  function startEdit(id: string, currentTitle: string | null) {
+    setEditingId(id);
+    setEditValue(currentTitle ?? "");
+    setTimeout(() => inputRef.current?.select(), 0);
+  }
+
+  async function commitEdit(id: string) {
+    const trimmed = editValue.trim();
+    if (trimmed) await renameConversation(id, trimmed);
+    setEditingId(null);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent, id: string) {
+    if (e.key === "Enter") void commitEdit(id);
+    if (e.key === "Escape") setEditingId(null);
   }
 
   return (
@@ -61,33 +83,69 @@ export function ConversationSidebar({ onNavigate }: ConversationSidebarProps) {
           <div className="space-y-0.5">
             {conversations.map((conv) => {
               const isActive = pathname === `/chat/${conv.id}`;
+              const isEditing = editingId === conv.id;
+
               return (
                 <div key={conv.id} className="group relative">
-                  <Link
-                    href={`/chat/${conv.id}`}
-                    onClick={() => {
-                      setActiveId(conv.id);
-                      onNavigate?.();
-                    }}
-                    className={`flex items-center px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                      isActive
-                        ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-medium"
-                        : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                    }`}
-                  >
-                    <span className="flex-1 truncate pr-6">
-                      {conv.title ?? "New Conversation"}
-                    </span>
-                  </Link>
-                  <button
-                    onClick={() => void deleteConversation(conv.id)}
-                    title="Delete"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex p-1 text-zinc-400 hover:text-red-500 rounded transition-colors"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  {isEditing ? (
+                    <div className="flex items-center px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-800">
+                      <input
+                        ref={inputRef}
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={() => void commitEdit(conv.id)}
+                        onKeyDown={(e) => handleKeyDown(e, conv.id)}
+                        className="flex-1 text-sm bg-transparent text-zinc-900 dark:text-white outline-none min-w-0"
+                        autoFocus
+                      />
+                    </div>
+                  ) : (
+                    <Link
+                      href={`/chat/${conv.id}`}
+                      onClick={() => {
+                        setActiveId(conv.id);
+                        onNavigate?.();
+                      }}
+                      onDoubleClick={(e) => {
+                        e.preventDefault();
+                        startEdit(conv.id, conv.title);
+                      }}
+                      className={`flex items-center px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                        isActive
+                          ? "bg-zinc-200 dark:bg-zinc-800 text-zinc-900 dark:text-white font-medium"
+                          : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      }`}
+                    >
+                      <span className="flex-1 truncate pr-14">
+                        {conv.title ?? "New Conversation"}
+                      </span>
+                    </Link>
+                  )}
+
+                  {!isEditing && (
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center gap-0.5">
+                      {/* Rename button */}
+                      <button
+                        onClick={() => startEdit(conv.id, conv.title)}
+                        title="Rename"
+                        className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 rounded transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 012.828 2.828L11.828 15.828a4 4 0 01-1.414.828l-3 1 1-3a4 4 0 01.828-1.414z" />
+                        </svg>
+                      </button>
+                      {/* Delete button */}
+                      <button
+                        onClick={() => void deleteConversation(conv.id)}
+                        title="Delete"
+                        className="p-1 text-zinc-400 hover:text-red-500 rounded transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
