@@ -24,6 +24,7 @@ export interface Conversation {
 // SSE event union — exhaustive, no fallthrough
 export type SSEEvent =
   | { type: "status";   content: string }
+  | { type: "thinking"; content: string }
   | { type: "delta";    content: string }
   | { type: "complete"; content: string; conversation_id: string; sources: Source[] }
   | { type: "error";    content: string };

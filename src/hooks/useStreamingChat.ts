@@ -11,11 +11,13 @@ export function useStreamingChat(conversationId: string, docId?: string) {
     statusLabel,
     statusHistory,
     partialContent,
+    thinkingContent,
     setMessages,
     addMessage,
     setStreaming,
     setStatusLabel,
     appendPartial,
+    appendThinking,
     clearPartial,
   } = useChatStore();
 
@@ -67,6 +69,8 @@ export function useStreamingChat(conversationId: string, docId?: string) {
           for (const event of events) {
             if (event.type === "status") {
               setStatusLabel(event.content);
+            } else if (event.type === "thinking") {
+              appendThinking(event.content);
             } else if (event.type === "delta") {
               appendPartial(event.content);
             } else if (event.type === "complete") {
@@ -106,7 +110,7 @@ export function useStreamingChat(conversationId: string, docId?: string) {
         setStreaming(false);
       }
     },
-    [conversationId, docId, addMessage, setStreaming, setStatusLabel, appendPartial, clearPartial]
+    [conversationId, docId, addMessage, setStreaming, setStatusLabel, appendPartial, appendThinking, clearPartial]
   );
 
   const abort = useCallback(() => {
@@ -122,6 +126,7 @@ export function useStreamingChat(conversationId: string, docId?: string) {
     statusLabel,
     statusHistory,
     partialContent,
+    thinkingContent,
     setMessages,
     sendMessage,
     abort,

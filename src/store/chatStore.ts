@@ -7,11 +7,13 @@ interface ChatStore {
   statusLabel: string;
   statusHistory: string[];
   partialContent: string;
+  thinkingContent: string;
   setMessages: (msgs: Message[]) => void;
   addMessage: (msg: Message) => void;
   setStreaming: (v: boolean) => void;
   setStatusLabel: (v: string) => void;
   appendPartial: (token: string) => void;
+  appendThinking: (token: string) => void;
   clearPartial: () => void;
 }
 
@@ -21,6 +23,7 @@ export const useChatStore = create<ChatStore>((set) => ({
   statusLabel: "",
   statusHistory: [],
   partialContent: "",
+  thinkingContent: "",
   setMessages: (messages) => set({ messages }),
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
   setStreaming: (isStreaming) => set({ isStreaming }),
@@ -33,5 +36,12 @@ export const useChatStore = create<ChatStore>((set) => ({
     })),
   appendPartial: (token) =>
     set((s) => ({ partialContent: s.partialContent + token })),
-  clearPartial: () => set({ partialContent: "", statusLabel: "", statusHistory: [] }),
+  appendThinking: (token) =>
+    set((s) => ({ thinkingContent: s.thinkingContent + token })),
+  clearPartial: () => set({
+    partialContent: "",
+    statusLabel: "",
+    statusHistory: [],
+    thinkingContent: "",
+  }),
 }));

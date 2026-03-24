@@ -20,6 +20,7 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
     statusLabel,
     statusHistory,
     partialContent,
+    thinkingContent,
     setMessages,
     sendMessage,
     abort,
@@ -83,6 +84,7 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
             content={partialContent}
             statusLabel={statusLabel}
             statusHistory={statusHistory}
+            thinkingContent={thinkingContent}
           />
         )}
 

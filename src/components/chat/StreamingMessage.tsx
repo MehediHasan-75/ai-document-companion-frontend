@@ -1,17 +1,24 @@
 "use client";
 
 import { RichContent } from "./RichContent";
+import { ThinkingBlock } from "./ThinkingBlock";
 
 interface StreamingMessageProps {
   content: string;
   statusLabel: string;
   statusHistory: string[];
+  thinkingContent: string;
 }
 
-export function StreamingMessage({ content, statusLabel, statusHistory }: StreamingMessageProps) {
+export function StreamingMessage({ content, statusLabel, statusHistory, thinkingContent }: StreamingMessageProps) {
+  const isThinking = !!thinkingContent && !content;
   return (
-    <div className="flex justify-start">
-      <div className="max-w-[80%] rounded-2xl px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 space-y-2">
+    <div className="space-y-1">
+      {/* Thinking block — above the answer bubble */}
+      <ThinkingBlock content={thinkingContent} isStreaming={isThinking} />
+
+      <div className="flex justify-start">
+      <div className="max-w-[80%] min-w-0 rounded-2xl px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 space-y-2">
 
         {/* Pipeline steps — visible until streaming completes */}
         {statusHistory.length > 0 && (
@@ -64,6 +71,7 @@ export function StreamingMessage({ content, statusLabel, statusHistory }: Stream
             <span className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce [animation-delay:300ms]" />
           </div>
         )}
+      </div>
       </div>
     </div>
   );
