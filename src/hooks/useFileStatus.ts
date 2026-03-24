@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { filesApi } from "@/api/files";
+import { useFileStore } from "@/store/fileStore";
 import type { FileStatus } from "@/types/file";
 
 const TERMINAL: FileStatus[] = ["processed", "failed", "deleted"];
@@ -11,6 +12,7 @@ export function useFileStatus(fileId: string, initial: FileStatus) {
   const [error, setError] = useState<string | undefined>();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const startedAt = useRef<number | null>(null);
+  const setFiles = useFileStore((s) => s.setFiles);
 
   // Elapsed timer — ticks every second while processing
   useEffect(() => {
@@ -36,14 +38,21 @@ export function useFileStatus(fileId: string, initial: FileStatus) {
         const data = await filesApi.status(fileId);
         setStatus(data.status);
         setError(data.error);
-        if (TERMINAL.includes(data.status)) clearInterval(interval);
+
+        if (TERMINAL.includes(data.status)) {
+          clearInterval(interval);
+          // Refetch full file list to get chunk/image/page counts
+          if (data.status === "processed") {
+            filesApi.list().then((res) => setFiles(res.files)).catch(() => {});
+          }
+        }
       } catch {
         clearInterval(interval);
       }
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [fileId, initial]);
+  }, [fileId, initial, setFiles]);
 
   const isStuck = status === "processing" && elapsedSeconds * 1000 >= STUCK_THRESHOLD_MS;
 
