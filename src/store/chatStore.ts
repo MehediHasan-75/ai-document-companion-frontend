@@ -4,13 +4,14 @@ import type { Message } from "@/types/chat";
 interface ChatStore {
   messages: Message[];
   isStreaming: boolean;
+  streamingConversationId: string | null;
   statusLabel: string;
   statusHistory: string[];
   partialContent: string;
   thinkingContent: string;
   setMessages: (msgs: Message[]) => void;
   addMessage: (msg: Message) => void;
-  setStreaming: (v: boolean) => void;
+  setStreaming: (v: boolean, conversationId?: string) => void;
   setStatusLabel: (v: string) => void;
   appendPartial: (token: string) => void;
   appendThinking: (token: string) => void;
@@ -20,13 +21,15 @@ interface ChatStore {
 export const useChatStore = create<ChatStore>((set) => ({
   messages: [],
   isStreaming: false,
+  streamingConversationId: null,
   statusLabel: "",
   statusHistory: [],
   partialContent: "",
   thinkingContent: "",
   setMessages: (messages) => set({ messages }),
   addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
-  setStreaming: (isStreaming) => set({ isStreaming }),
+  setStreaming: (isStreaming, conversationId) =>
+    set({ isStreaming, streamingConversationId: isStreaming ? (conversationId ?? null) : null }),
   setStatusLabel: (statusLabel) =>
     set((s) => ({
       statusLabel,

@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import "katex/dist/katex.min.css";
@@ -70,11 +71,11 @@ const mdComponents: Components = {
 
   table: ({ children }) => (
     <div className="overflow-x-auto my-3">
-      <table className="w-full border-collapse text-sm">{children}</table>
+      <table className="border-collapse text-sm" style={{ tableLayout: "auto", width: "auto" }}>{children}</table>
     </div>
   ),
   th: ({ children }) => (
-    <th className="border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-left font-semibold text-xs">
+    <th className="border border-zinc-300 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-left font-semibold text-xs whitespace-nowrap">
       {children}
     </th>
   ),
@@ -127,7 +128,7 @@ export function RichContent({ content, isStreaming = false }: RichContentProps) 
     <div className="text-sm text-zinc-900 dark:text-zinc-100 max-w-none">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[rehypeRaw, rehypeKatex]}
         components={mdComponents}
       >
         {content}

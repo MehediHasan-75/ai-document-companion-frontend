@@ -22,6 +22,45 @@ export function useStreamingChat(conversationId: string, docId?: string) {
   } = useChatStore();
 
   const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
+  const bufferRef = useRef("");
+
+  const processEvents = useCallback(
+    (chunk: string) => {
+      for (const event of parseSSEChunk(chunk)) {
+        if (event.type === "status") {
+          setStatusLabel(event.content);
+        } else if (event.type === "thinking") {
+          appendThinking(event.content);
+        } else if (event.type === "delta") {
+          appendPartial(event.content);
+        } else if (event.type === "complete") {
+          const thinking = useChatStore.getState().thinkingContent || undefined;
+          const assistantMsg: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: event.content,
+            thinking,
+            sources: event.sources,
+            created_at: new Date().toISOString(),
+          };
+          addMessage(assistantMsg);
+          clearPartial();
+          setStreaming(false);
+        } else if (event.type === "error") {
+          const errorMsg: Message = {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: `Error: ${event.content}`,
+            created_at: new Date().toISOString(),
+          };
+          addMessage(errorMsg);
+          clearPartial();
+          setStreaming(false);
+        }
+      }
+    },
+    [addMessage, appendPartial, appendThinking, clearPartial, setStatusLabel, setStreaming]
+  );
 
   const sendMessage = useCallback(
     async (question: string) => {
@@ -33,9 +72,10 @@ export function useStreamingChat(conversationId: string, docId?: string) {
         created_at: new Date().toISOString(),
       };
       addMessage(userMsg);
-      setStreaming(true);
+      setStreaming(true, conversationId);
       setStatusLabel("Connecting…");
       clearPartial();
+      bufferRef.current = "";
 
       try {
         const response = await fetch(
@@ -63,39 +103,19 @@ export function useStreamingChat(conversationId: string, docId?: string) {
           const { value, done } = await reader.read();
           if (done) break;
 
-          const chunk = decoder.decode(value, { stream: true });
-          const events = parseSSEChunk(chunk);
+          bufferRef.current += decoder.decode(value, { stream: true });
+          const lastNewline = bufferRef.current.lastIndexOf("\n");
+          if (lastNewline === -1) continue;
 
-          for (const event of events) {
-            if (event.type === "status") {
-              setStatusLabel(event.content);
-            } else if (event.type === "thinking") {
-              appendThinking(event.content);
-            } else if (event.type === "delta") {
-              appendPartial(event.content);
-            } else if (event.type === "complete") {
-              const assistantMsg: Message = {
-                id: crypto.randomUUID(),
-                role: "assistant",
-                content: event.content,
-                sources: event.sources,
-                created_at: new Date().toISOString(),
-              };
-              addMessage(assistantMsg);
-              clearPartial();
-              setStreaming(false);
-            } else if (event.type === "error") {
-              const errorMsg: Message = {
-                id: crypto.randomUUID(),
-                role: "assistant",
-                content: `Error: ${event.content}`,
-                created_at: new Date().toISOString(),
-              };
-              addMessage(errorMsg);
-              clearPartial();
-              setStreaming(false);
-            }
-          }
+          const complete = bufferRef.current.slice(0, lastNewline + 1);
+          bufferRef.current = bufferRef.current.slice(lastNewline + 1);
+          processEvents(complete);
+        }
+
+        // Flush any remaining buffer (final chunk may lack trailing newline)
+        if (bufferRef.current.trim()) {
+          processEvents(bufferRef.current);
+          bufferRef.current = "";
         }
       } catch (err: unknown) {
         const text = err instanceof Error ? err.message : "Something went wrong";
@@ -110,7 +130,7 @@ export function useStreamingChat(conversationId: string, docId?: string) {
         setStreaming(false);
       }
     },
-    [conversationId, docId, addMessage, setStreaming, setStatusLabel, appendPartial, appendThinking, clearPartial]
+    [conversationId, docId, addMessage, setStreaming, setStatusLabel, clearPartial, processEvents]
   );
 
   const abort = useCallback(() => {

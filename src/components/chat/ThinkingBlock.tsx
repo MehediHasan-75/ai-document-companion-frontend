@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ThinkingBlockProps {
   content: string;
@@ -9,6 +9,10 @@ interface ThinkingBlockProps {
 
 export function ThinkingBlock({ content, isStreaming }: ThinkingBlockProps) {
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (isStreaming) setOpen(true);
+  }, [isStreaming]);
 
   if (!content) return null;
 

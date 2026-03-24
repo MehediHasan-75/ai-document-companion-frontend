@@ -9,6 +9,7 @@ export interface Message {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
+  thinking?: string;
   sources?: Source[];
   created_at: string;
 }

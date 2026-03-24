@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { conversationsApi } from "@/api/conversations";
+import { useChatStore } from "@/store/chatStore";
 import { useStreamingChat } from "@/hooks/useStreamingChat";
 import { MessageBubble } from "./MessageBubble";
 import { StreamingMessage } from "./StreamingMessage";
@@ -35,7 +36,12 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
     if (loadedRef.current === conversationId) return;
     loadedRef.current = conversationId;
 
-    // Cancel any in-flight stream from the previous conversation
+    // If user navigated away and back to the same conversation mid-stream,
+    // the background fetch is still running — don't abort or reload history.
+    const { isStreaming, streamingConversationId } = useChatStore.getState();
+    if (isStreaming && streamingConversationId === conversationId) return;
+
+    // Cancel any in-flight stream from a different conversation
     abort();
 
     setHistoryLoading(true);
@@ -50,7 +56,7 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
   // Auto-scroll as tokens arrive
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, partialContent]);
+  }, [messages, partialContent, thinkingContent]);
 
   return (
     <div className="flex flex-col h-full">
