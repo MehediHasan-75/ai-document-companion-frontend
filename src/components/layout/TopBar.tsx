@@ -6,6 +6,17 @@ import { clearToken } from "@/utils/token";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
+// Placeholders that look like type annotations — treat as unset
+const PLACEHOLDER = /^(string|number|boolean|null|undefined|object|any)$/i;
+
+function displayName(fullName: string | null | undefined, email: string): string {
+  if (fullName && fullName.trim() && !PLACEHOLDER.test(fullName.trim())) {
+    return fullName.trim();
+  }
+  // Fall back to the part before @ in the email
+  return email.split("@")[0] ?? email;
+}
+
 interface TopBarProps {
   onMenuClick?: () => void;
 }
@@ -42,7 +53,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       <div className="flex items-center gap-2">
         {user?.email && (
           <span className="hidden sm:inline text-sm text-zinc-500 dark:text-zinc-400">
-            {user.full_name ?? user.email}
+            {displayName(user.full_name, user.email)}
           </span>
         )}
         <ThemeToggle />
