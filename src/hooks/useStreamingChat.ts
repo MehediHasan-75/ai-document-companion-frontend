@@ -4,7 +4,7 @@ import { parseSSEChunk } from "@/utils/sse";
 import { useChatStore } from "@/store/chatStore";
 import type { Message } from "@/types/chat";
 
-export function useStreamingChat(conversationId: string) {
+export function useStreamingChat(conversationId: string, docId?: string) {
   const {
     messages,
     isStreaming,
@@ -44,7 +44,10 @@ export function useStreamingChat(conversationId: string) {
               "Content-Type": "application/json",
               Authorization: `Bearer ${getToken() ?? ""}`,
             },
-            body: JSON.stringify({ question }),
+            body: JSON.stringify({
+              question,
+              ...(docId ? { doc_ids: [docId] } : {}),
+            }),
           }
         );
 
@@ -103,7 +106,7 @@ export function useStreamingChat(conversationId: string) {
         setStreaming(false);
       }
     },
-    [conversationId, addMessage, setStreaming, setStatusLabel, appendPartial, clearPartial]
+    [conversationId, docId, addMessage, setStreaming, setStatusLabel, appendPartial, clearPartial]
   );
 
   const abort = useCallback(() => {

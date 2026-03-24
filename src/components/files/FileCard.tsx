@@ -56,7 +56,7 @@ export function FileCard({ file }: FileCardProps) {
       const conv = await conversationsApi.create(`Questions about ${file.filename}`);
       addConversation(conv);
       setActiveId(conv.id);
-      router.push(`/chat/${conv.id}`);
+      router.push(`/chat/${conv.id}?doc_id=${file.id}`);
     } catch {
       toast("Could not start a conversation", "error");
       setStarting(false);
