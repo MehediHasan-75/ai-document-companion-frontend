@@ -16,7 +16,7 @@ interface FileCardProps {
 }
 
 export function FileCard({ file }: FileCardProps) {
-  const { status, error } = useFileStatus(file.id, file.status);
+  const { status, error, elapsedSeconds, isStuck } = useFileStatus(file.id, file.status);
   const { updateFileStatus, removeFile } = useFileStore();
   const addConversation = useConversationStore((s) => s.addConversation);
   const setActiveId = useConversationStore((s) => s.setActiveId);
@@ -62,10 +62,13 @@ export function FileCard({ file }: FileCardProps) {
   }
 
   const isProcessed = status === "processed";
+  const hasNoChunks = isProcessed && file.chunk_count === 0;
 
   return (
     <div className={`flex flex-col bg-white dark:bg-zinc-900 rounded-xl border transition-colors ${
-      isProcessed
+      isStuck || hasNoChunks
+        ? "border-red-200 dark:border-red-900/50"
+        : isProcessed
         ? "border-green-200 dark:border-green-900/50"
         : "border-zinc-200 dark:border-zinc-800"
     }`}>
@@ -73,9 +76,15 @@ export function FileCard({ file }: FileCardProps) {
       <div className="flex items-center gap-3 px-4 py-3">
         {/* Icon */}
         <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-          isProcessed ? "bg-green-50 dark:bg-green-900/20" : "bg-primary/10"
+          isStuck || hasNoChunks ? "bg-red-50 dark:bg-red-900/20"
+          : isProcessed ? "bg-green-50 dark:bg-green-900/20"
+          : "bg-primary/10"
         }`}>
-          <svg className={`w-5 h-5 ${isProcessed ? "text-green-600 dark:text-green-400" : "text-primary"}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg className={`w-5 h-5 ${
+            isStuck || hasNoChunks ? "text-red-500 dark:text-red-400"
+            : isProcessed ? "text-green-600 dark:text-green-400"
+            : "text-primary"
+          }`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
         </div>
@@ -86,7 +95,7 @@ export function FileCard({ file }: FileCardProps) {
             {file.filename}
           </p>
           <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            <StatusBadge status={status} />
+            <StatusBadge status={status} elapsedSeconds={elapsedSeconds} isStuck={isStuck} />
             {error && (
               <span className="text-[11px] text-red-500 truncate">{error}</span>
             )}
@@ -163,8 +172,34 @@ export function FileCard({ file }: FileCardProps) {
         </div>
       </div>
 
-      {/* Ready CTA — only when processed */}
-      {isProcessed && (
+      {/* Stuck warning banner */}
+      {isStuck && (
+        <div className="flex items-start gap-2 px-4 py-2.5 border-t border-red-100 dark:border-red-900/40 bg-red-50/50 dark:bg-red-900/10 rounded-b-xl">
+          <svg className="w-3.5 h-3.5 text-red-500 shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <p className="text-[11px] text-red-600 dark:text-red-400 leading-relaxed">
+            Processing is taking unusually long. The background job may have crashed.
+            Try deleting and re-uploading the file.
+          </p>
+        </div>
+      )}
+
+      {/* 0 chunks warning */}
+      {hasNoChunks && !isStuck && (
+        <div className="flex items-start gap-2 px-4 py-2.5 border-t border-red-100 dark:border-red-900/40 bg-red-50/50 dark:bg-red-900/10 rounded-b-xl">
+          <svg className="w-3.5 h-3.5 text-red-500 shrink-0 mt-px" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <p className="text-[11px] text-red-600 dark:text-red-400 leading-relaxed">
+            No content was extracted. The file may be a scanned image without OCR support.
+            Queries against this document will return no results.
+          </p>
+        </div>
+      )}
+
+      {/* Ready CTA — only when processed and has chunks */}
+      {isProcessed && !hasNoChunks && (
         <div className="flex items-center justify-between px-4 py-2 border-t border-green-100 dark:border-green-900/40 bg-green-50/50 dark:bg-green-900/10 rounded-b-xl">
           <span className="flex items-center gap-1.5 text-[11px] font-medium text-green-700 dark:text-green-400">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
