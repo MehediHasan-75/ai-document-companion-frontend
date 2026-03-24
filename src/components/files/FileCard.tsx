@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFileStatus } from "@/hooks/useFileStatus";
 import { StatusBadge } from "./StatusBadge";
@@ -24,9 +24,11 @@ export function FileCard({ file }: FileCardProps) {
   const [starting, setStarting] = useState(false);
 
   // Keep store in sync with polled status
-  if (status !== file.status) {
-    updateFileStatus(file.id, status);
-  }
+  useEffect(() => {
+    if (status !== file.status) {
+      updateFileStatus(file.id, status);
+    }
+  }, [status, file.id, file.status, updateFileStatus]);
 
   async function handleProcess() {
     try {
