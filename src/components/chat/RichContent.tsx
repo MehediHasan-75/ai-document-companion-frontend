@@ -14,11 +14,20 @@ interface RichContentProps {
   isStreaming?: boolean;
 }
 
+/** True when the code block content looks like a markdown table or rich text */
+function looksLikeMarkdown(code: string): boolean {
+  const lines = code.trim().split("\n").filter(Boolean);
+  const tableLines = lines.filter((l) => l.trim().startsWith("|"));
+  return tableLines.length >= 2;
+}
+
 const mdComponents: Components = {
   // Syntax-highlighted code blocks
   code({ className, children }) {
     const match = /language-(\w+)/.exec(className ?? "");
     const code = String(children).replace(/\n$/, "");
+
+    // Named language → syntax highlight
     if (match) {
       return (
         <SyntaxHighlighter
@@ -37,6 +46,16 @@ const mdComponents: Components = {
         </SyntaxHighlighter>
       );
     }
+
+    // No language + looks like markdown table/text → re-render as markdown
+    if (looksLikeMarkdown(code)) {
+      return (
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+          {code}
+        </ReactMarkdown>
+      );
+    }
+
     return (
       <code className="rounded bg-zinc-200 dark:bg-zinc-700 px-1.5 py-0.5 font-mono text-xs">
         {children}
