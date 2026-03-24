@@ -6,6 +6,7 @@ interface FileStore {
   uploading: boolean;
   setFiles: (files: Document[]) => void;
   addFile: (file: Document) => void;
+  updateFile: (doc: Document) => void;
   updateFileStatus: (id: string, status: Document["status"]) => void;
   removeFile: (id: string) => void;
   setUploading: (v: boolean) => void;
@@ -16,6 +17,10 @@ export const useFileStore = create<FileStore>((set) => ({
   uploading: false,
   setFiles: (files) => set({ files }),
   addFile: (file) => set((s) => ({ files: [file, ...s.files] })),
+  updateFile: (doc) =>
+    set((s) => ({
+      files: s.files.map((f) => (f.id === doc.id ? doc : f)),
+    })),
   updateFileStatus: (id, status) =>
     set((s) => ({
       files: s.files.map((f) => (f.id === id ? { ...f, status } : f)),

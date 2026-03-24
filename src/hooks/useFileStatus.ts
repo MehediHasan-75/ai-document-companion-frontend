@@ -12,7 +12,7 @@ export function useFileStatus(fileId: string, initial: FileStatus) {
   const [error, setError] = useState<string | undefined>();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const startedAt = useRef<number | null>(null);
-  const setFiles = useFileStore((s) => s.setFiles);
+  const updateFile = useFileStore((s) => s.updateFile);
 
   // Elapsed timer — ticks every second while processing
   useEffect(() => {
@@ -41,9 +41,9 @@ export function useFileStatus(fileId: string, initial: FileStatus) {
 
         if (TERMINAL.includes(data.status)) {
           clearInterval(interval);
-          // Refetch full file list to get chunk/image/page counts
+          // Refetch this single file to get chunk/image/page counts
           if (data.status === "processed") {
-            filesApi.list().then((res) => setFiles(res.files)).catch(() => {});
+            filesApi.get(fileId).then(updateFile).catch(() => {});
           }
         }
       } catch {
@@ -52,7 +52,7 @@ export function useFileStatus(fileId: string, initial: FileStatus) {
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [fileId, initial, setFiles]);
+  }, [fileId, initial, updateFile]);
 
   const isStuck = status === "processing" && elapsedSeconds * 1000 >= STUCK_THRESHOLD_MS;
 

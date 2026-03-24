@@ -16,6 +16,9 @@ export const filesApi = {
   process: (fileId: string) =>
     api.post(`/files/process/${fileId}`).then((r) => r.data),
 
+  get: (fileId: string) =>
+    api.get<Document>(`/files/${fileId}`).then((r) => r.data),
+
   status: (fileId: string) =>
     api.get<ProcessingStatus>(`/files/status/${fileId}`).then((r) => r.data),
 
