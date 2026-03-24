@@ -34,6 +34,9 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
     if (loadedRef.current === conversationId) return;
     loadedRef.current = conversationId;
 
+    // Cancel any in-flight stream from the previous conversation
+    abort();
+
     setHistoryLoading(true);
     setMessages([]);
     conversationsApi
@@ -41,7 +44,7 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
       .then(setMessages)
       .catch(() => setMessages([]))
       .finally(() => setHistoryLoading(false));
-  }, [conversationId, setMessages]);
+  }, [conversationId, setMessages, abort]);
 
   // Auto-scroll as tokens arrive
   useEffect(() => {

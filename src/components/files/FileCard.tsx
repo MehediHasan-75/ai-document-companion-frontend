@@ -20,6 +20,7 @@ export function FileCard({ file }: FileCardProps) {
   const { updateFileStatus, removeFile } = useFileStore();
   const addConversation = useConversationStore((s) => s.addConversation);
   const setActiveId = useConversationStore((s) => s.setActiveId);
+  const setDocFilter = useConversationStore((s) => s.setDocFilter);
   const router = useRouter();
   const [starting, setStarting] = useState(false);
 
@@ -56,6 +57,7 @@ export function FileCard({ file }: FileCardProps) {
       const conv = await conversationsApi.create(`Questions about ${file.filename}`);
       addConversation(conv);
       setActiveId(conv.id);
+      setDocFilter(conv.id, file.id);
       router.push(`/chat/${conv.id}?doc_id=${file.id}`);
     } catch {
       toast("Could not start a conversation", "error");

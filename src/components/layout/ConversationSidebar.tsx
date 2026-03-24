@@ -14,6 +14,7 @@ export function ConversationSidebar({ onNavigate }: ConversationSidebarProps) {
   const router = useRouter();
   const { conversations, createConversation, deleteConversation } = useConversations();
   const setActiveId = useConversationStore((s) => s.setActiveId);
+  const docFilters = useConversationStore((s) => s.docFilters);
 
   async function handleNew() {
     const id = await createConversation();
@@ -64,7 +65,7 @@ export function ConversationSidebar({ onNavigate }: ConversationSidebarProps) {
               return (
                 <div key={conv.id} className="group relative">
                   <Link
-                    href={`/chat/${conv.id}`}
+                    href={docFilters[conv.id] ? `/chat/${conv.id}?doc_id=${docFilters[conv.id]}` : `/chat/${conv.id}`}
                     onClick={() => {
                       setActiveId(conv.id);
                       onNavigate?.();
