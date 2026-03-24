@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ThinkingBlockProps {
   content: string;
@@ -9,10 +9,26 @@ interface ThinkingBlockProps {
 
 export function ThinkingBlock({ content, isStreaming }: ThinkingBlockProps) {
   const [open, setOpen] = useState(false);
+  const wasStreamingRef = useRef(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Auto-open when thinking starts; auto-close when answer starts
   useEffect(() => {
-    if (isStreaming) setOpen(true);
+    if (isStreaming) {
+      wasStreamingRef.current = true;
+      setOpen(true);
+    } else if (wasStreamingRef.current) {
+      wasStreamingRef.current = false;
+      setOpen(false);
+    }
   }, [isStreaming]);
+
+  // Auto-scroll the thinking box to the bottom as tokens arrive
+  useEffect(() => {
+    if (isStreaming && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [content, isStreaming]);
 
   if (!content) return null;
 
@@ -62,7 +78,7 @@ export function ThinkingBlock({ content, isStreaming }: ThinkingBlockProps) {
 
         {/* Collapsible content */}
         {open && (
-          <div className="mt-1.5 px-3 py-2.5 rounded-xl border border-violet-200 dark:border-violet-900/40 bg-violet-50/50 dark:bg-violet-950/20 max-h-64 overflow-y-auto">
+          <div ref={scrollRef} className="mt-1.5 px-3 py-2.5 rounded-xl border border-violet-200 dark:border-violet-900/40 bg-violet-50/50 dark:bg-violet-950/20 max-h-64 overflow-y-auto">
             <pre className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono leading-relaxed whitespace-pre-wrap break-words">
               {content}
               {isStreaming && (
