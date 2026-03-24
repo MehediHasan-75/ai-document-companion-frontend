@@ -116,38 +116,3 @@ export function RichContent({ content, isStreaming = false }: RichContentProps) 
     </div>
   );
 }
-return;
-    }
-    let cancelled = false;
-    processMarkdown(content).then((result) => {
-      if (!cancelled) setHtml(result);
-    }).catch(() => {
-      if (!cancelled) setHtml(null); // fall back to react-markdown below
-    });
-    return () => { cancelled = true; };
-  }, [content, isStreaming]);
-
-  const wrapClass = "text-sm text-zinc-900 dark:text-zinc-100 max-w-none";
-
-  // While streaming OR while async processing hasn't completed yet — use fast sync renderer
-  if (isStreaming || html === null) {
-    return (
-      <div className={wrapClass}>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          components={mdComponents}
-        >
-          {content}
-        </ReactMarkdown>
-      </div>
-    );
-  }
-
-  // Final message: render fully-processed HTML (KaTeX + Shiki applied)
-  return (
-    <div
-      className={`${wrapClass} rich-content`}
-      dangerouslySetInnerHTML={{ __html: html }}
-    />
-  );
-}
