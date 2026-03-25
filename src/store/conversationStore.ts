@@ -11,6 +11,7 @@ interface ConversationStore {
   removeConversation: (id: string) => void;
   setActiveId: (id: string | null) => void;
   setDocFilter: (conversationId: string, docId: string) => void;
+  renameConversation: (id: string, title: string) => void;
 }
 
 export const useConversationStore = create<ConversationStore>()(
@@ -32,6 +33,10 @@ export const useConversationStore = create<ConversationStore>()(
       setActiveId: (activeId) => set({ activeId }),
       setDocFilter: (conversationId, docId) =>
         set((s) => ({ docFilters: { ...s.docFilters, [conversationId]: docId } })),
+      renameConversation: (id, title) =>
+        set((s) => ({
+          conversations: s.conversations.map((c) => c.id === id ? { ...c, title } : c),
+        })),
     }),
     {
       name: "conversations",

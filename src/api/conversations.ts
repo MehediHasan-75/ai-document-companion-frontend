@@ -13,4 +13,7 @@ export const conversationsApi = {
 
   delete: (id: string) =>
     api.delete(`/conversations/${id}`).then((r) => r.data),
+
+  rename: (id: string, title: string) =>
+    api.patch<Conversation>(`/conversations/${id}`, { title }).then((r) => r.data),
 };

@@ -2,7 +2,17 @@ import { useCallback, useRef } from "react";
 import { getToken } from "@/utils/token";
 import { parseSSEChunk } from "@/utils/sse";
 import { useChatStore } from "@/store/chatStore";
+import { useConversationStore } from "@/store/conversationStore";
+import { conversationsApi } from "@/api/conversations";
 import type { Message } from "@/types/chat";
+
+function generateTitle(question: string): string {
+  const trimmed = question.trim();
+  if (trimmed.length <= 40) return trimmed;
+  const cut = trimmed.slice(0, 40);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > 20 ? cut.slice(0, lastSpace) : cut) + "…";
+}
 
 // Module-level so any hook instance (any chat page) can cancel the in-flight stream.
 let activeController: AbortController | null = null;
@@ -29,6 +39,7 @@ export function useStreamingChat(conversationId: string, docId?: string) {
   const messages = conversationMessages[conversationId] ?? [];
   const thisConversationIsStreaming = isStreaming && streamingConversationId === conversationId;
 
+  const { renameConversation } = useConversationStore();
   const bufferRef = useRef("");
 
   const processEvents = useCallback(
@@ -76,6 +87,14 @@ export function useStreamingChat(conversationId: string, docId?: string) {
       activeController?.abort();
       activeController = new AbortController();
       const { signal } = activeController;
+
+      // Rename conversation from first message (once only)
+      const isFirstMessage = (useChatStore.getState().conversationMessages[conversationId] ?? []).length === 0;
+      if (isFirstMessage) {
+        const title = generateTitle(question);
+        renameConversation(conversationId, title);
+        conversationsApi.rename(conversationId, title).catch(() => {/* best-effort */});
+      }
 
       // Optimistically add user message
       const userMsg: Message = {
@@ -149,7 +168,7 @@ export function useStreamingChat(conversationId: string, docId?: string) {
         setStreaming(false);
       }
     },
-    [conversationId, docId, addMessage, setStreaming, setStatusLabel, clearPartial, processEvents]
+    [conversationId, docId, addMessage, setStreaming, setStatusLabel, clearPartial, processEvents, renameConversation]
   );
 
   const abort = useCallback(() => {
