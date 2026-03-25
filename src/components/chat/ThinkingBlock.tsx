@@ -44,7 +44,7 @@ export function ThinkingBlock({ content, isStreaming }: ThinkingBlockProps) {
       el.removeEventListener("touchstart", onUserScrollIntent);
       el.removeEventListener("scroll", onScroll);
     };
-  }, [isStreaming]);
+  }, [isStreaming, open]);
 
   // Auto-scroll as thinking tokens arrive
   useEffect(() => {
