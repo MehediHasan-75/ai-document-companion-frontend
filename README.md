@@ -9,6 +9,8 @@
 
 > **Chat with your documents.** Upload files, ask questions, and get cited answers — streamed in real time with full AI reasoning transparency.
 
+> 🔗 **Live demo:** coming soon
+
 ---
 
 ## Overview
@@ -24,14 +26,58 @@ What sets this apart from a standard chatbot UI:
 
 ---
 
+## Architecture
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                    Next.js App (App Router)                    │
+│                                                                │
+│  ┌─────────────┐   ┌──────────────┐   ┌────────────────────┐  │
+│  │  /dashboard │   │  /chat/:id   │   │  /login /register  │  │
+│  └──────┬──────┘   └──────┬───────┘   └─────────┬──────────┘  │
+│         │                 │                     │              │
+│  ┌──────▼─────────────────▼─────────────────────▼──────────┐  │
+│  │              Zustand Stores                              │  │
+│  │   authStore · chatStore · conversationStore · fileStore  │  │
+│  └──────────────────────────┬───────────────────────────────┘  │
+│                             │                                  │
+│  ┌──────────────────────────▼───────────────────────────────┐  │
+│  │         Axios Client (JWT interceptor + 401 redirect)    │  │
+│  └──────────────────────────┬───────────────────────────────┘  │
+└─────────────────────────────┼──────────────────────────────────┘
+                              │ REST + SSE
+                    ┌─────────▼──────────┐
+                    │   Backend API      │
+                    │  (FastAPI / RAG)   │
+                    └────────────────────┘
+```
+
+**SSE event pipeline:** `status` → `thinking` → `delta` → `complete` / `error`
+
+Each event type updates a distinct slice of UI state: status events update a progress indicator, thinking events accumulate into the collapsible ThinkingBlock, delta events append tokens to the streaming message, and complete/error events finalise or surface failures — all without unnecessary re-renders of unrelated components.
+
+---
+
 ## Screenshots
 
-| Screen | Preview |
-|--------|---------|
-| Dashboard — file library & upload | ![Dashboard](docs/screenshots/dashboard.webp) |
-| Chat — streaming answer with citations | ![Chat streaming](docs/screenshots/chat-streaming.webp) |
-| Chat — Mermaid diagram rendered inline | ![Mermaid diagram](docs/screenshots/chat-mermaid.webp) |
-| ThinkingBlock — expanded reasoning panel | ![ThinkingBlock](docs/screenshots/thinking-block.webp) |
+<p align="center">
+  <img src="docs/screenshots/dashboard.webp" width="49%" alt="Dashboard — file library & upload" />
+  <img src="docs/screenshots/chat-streaming.webp" width="49%" alt="Chat — streaming answer with citations" />
+</p>
+<p align="center">
+  <em>Dashboard: drag-and-drop upload with live processing status polling</em>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <em>Chat: token-by-token streaming, inline Markdown, source citations</em>
+</p>
+<p align="center">
+  <img src="docs/screenshots/chat-mermaid.webp" width="49%" alt="Chat — Mermaid diagram rendered inline" />
+  <img src="docs/screenshots/thinking-block.webp" width="49%" alt="ThinkingBlock — AI reasoning panel" />
+</p>
+<p align="center">
+  <em>Mermaid: AI-generated diagrams rendered without raw syntax leaking</em>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <em>ThinkingBlock: step-by-step reasoning exposed before the final answer</em>
+</p>
 
 ---
 
@@ -66,6 +112,8 @@ What sets this apart from a standard chatbot UI:
 | HTML sanitization | DOMPurify | 3 |
 | Forms & validation | React Hook Form + Zod | 7 / 4 |
 
+**Performance notes:** Mermaid and KaTeX are browser-only and loaded only when the chat view mounts. Next.js App Router splits code at route boundaries automatically. The streaming SSE approach renders perceived latency near-zero — the first token appears within ~200 ms of the request.
+
 ---
 
 ## Project Structure
@@ -73,12 +121,14 @@ What sets this apart from a standard chatbot UI:
 ```
 src/
 ├── app/                          # Next.js App Router pages
-│   ├── login/                    # /login
-│   ├── register/                 # /register
-│   ├── dashboard/                # /dashboard — file library
-│   └── chat/
-│       ├── page.tsx              # /chat — new conversation entry
-│       └── [conversationId]/     # /chat/:id — active conversation
+│   ├── (app)/                    # Authenticated route group
+│   │   ├── dashboard/            # /dashboard — file library
+│   │   └── chat/
+│   │       ├── page.tsx          # /chat — new conversation entry
+│   │       └── [conversationId]/ # /chat/:id — active conversation
+│   └── (auth)/                   # Unauthenticated route group
+│       ├── login/                # /login
+│       └── register/             # /register
 │
 ├── components/
 │   ├── chat/
@@ -88,10 +138,10 @@ src/
 │   │   ├── RichContent.tsx       # Markdown / LaTeX / code dispatcher
 │   │   ├── MermaidDiagram.tsx    # Mermaid renderer with XSS guard
 │   │   └── SourcePanel.tsx       # Citation list sidebar
-│   ├── dashboard/
-│   │   └── FileUploader.tsx      # Drag-and-drop file upload
-│   └── layout/
-│       └── ConversationSidebar.tsx
+│   ├── files/                    # File upload & management components
+│   ├── layout/
+│   │   └── ConversationSidebar.tsx
+│   └── ui/                       # Shared primitive UI components
 │
 ├── hooks/
 │   └── useStreamingChat.ts       # SSE streaming, event parsing, abort
@@ -102,6 +152,9 @@ src/
 │   ├── conversationStore.ts
 │   ├── fileStore.ts
 │   └── toastStore.ts
+│
+├── types/                        # Shared TypeScript type definitions
+├── utils/                        # Utility functions
 │
 └── api/                          # Axios API modules
     ├── auth.ts                   # register / login / me
@@ -140,6 +193,19 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ---
 
+## Development
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server at http://localhost:3000 |
+| `npm run build` | Production build |
+| `npm run start` | Serve the production build |
+| `npm run lint` | Run ESLint (Next.js config) |
+
+TypeScript is configured in **strict mode** with `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, and `noImplicitReturns`.
+
+---
+
 ## Environment Variables
 
 | Variable | Description | Example |
@@ -174,10 +240,10 @@ Once the answer completes, open the `SourcePanel` to see exactly which document 
 
 Building this UI required solving several non-trivial frontend engineering problems:
 
-- **Streaming state management across navigation** — a user navigating away from a chat should not kill the in-flight stream. Background streams are kept alive in `conversationStore` and re-attached when the user returns.
-- **XSS in AI-generated HTML** — AI models can produce HTML in Markdown output. Every rendered payload is sanitized through DOMPurify before touching the DOM.
-- **Mermaid + SSR** — Mermaid is a browser-only library that calls `document` on import. It required a carefully gated `useEffect` mount strategy to avoid SSR crashes in Next.js.
-- **Concurrent event types in a single SSE stream** — the stream carries `status`, `thinking`, `delta`, `done`, and `error` events that each update different parts of the UI without causing unnecessary re-renders.
+- **Streaming state management across navigation** — background streams are kept alive in `conversationStore`, trading a small memory footprint for seamless UX continuity; a user navigating away does not kill the in-flight stream and can return to see the full response.
+- **XSS in AI-generated HTML** — DOMPurify sanitization with an SVG allowlist adds a DOM-parse overhead on every AI response but prevents mXSS from Mermaid's `<foreignObject>` output reaching the DOM unsanitised.
+- **Concurrent event types in a single SSE stream** — a module-level `activeController` ref enables cross-page SSE cancellation with zero prop drilling, at the cost of limiting the client to a single active stream at a time (acceptable given sequential conversation semantics).
+- **Mermaid + SSR** — Mermaid deferred rendering (skipped while `isStreaming=true`) avoids partial-diagram parse errors at the cost of a brief visual delay post-stream; it also required a carefully gated `useEffect` mount strategy to prevent SSR crashes in Next.js.
 
 ---
 
@@ -226,7 +292,7 @@ Please follow the existing conventions: TypeScript strict mode, Tailwind utility
 ## Author
 
 **Mehedi Hasan**
-[GitHub](https://github.com/MehediHasan-75) · [LinkedIn](https://www.linkedin.com/in/mehedi-hasan-075379206/)
+[GitHub](https://github.com/MehediHasan-75) · [LinkedIn](https://www.linkedin.com/in/mehedi-hasan-075379206/) · [Portfolio](https://mehedi0.me/) · [Blog](https://mdmehedi.tech/)
 
 ---
 
