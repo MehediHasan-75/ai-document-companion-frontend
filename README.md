@@ -28,10 +28,10 @@ What sets this apart from a standard chatbot UI:
 
 | Screen | Preview |
 |--------|---------|
-| Dashboard — file library & upload | ![Dashboard](docs/screenshots/dashboard.png) |
-| Chat — streaming answer with citations | ![Chat streaming](docs/screenshots/chat-streaming.png) |
-| Chat — Mermaid diagram rendered inline | ![Mermaid diagram](docs/screenshots/chat-mermaid.png) |
-| ThinkingBlock — expanded reasoning panel | ![ThinkingBlock](docs/screenshots/thinking-block.png) |
+| Dashboard — file library & upload | ![Dashboard](docs/screenshots/dashboard.webp) |
+| Chat — streaming answer with citations | ![Chat streaming](docs/screenshots/chat-streaming.webp) |
+| Chat — Mermaid diagram rendered inline | ![Mermaid diagram](docs/screenshots/chat-mermaid.webp) |
+| ThinkingBlock — expanded reasoning panel | ![ThinkingBlock](docs/screenshots/thinking-block.webp) |
 
 ---
 
