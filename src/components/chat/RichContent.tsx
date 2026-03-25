@@ -23,7 +23,8 @@ function looksLikeMarkdown(code: string): boolean {
   return tableLines.length >= 2;
 }
 
-const mdComponents: Components = {
+function buildComponents(isStreaming: boolean): Components {
+  return {
   // Syntax-highlighted code blocks
   code({ className, children }) {
     const match = /language-(\w+)/.exec(className ?? "");
@@ -31,7 +32,7 @@ const mdComponents: Components = {
 
     // Mermaid diagrams
     if (match && match[1] === "mermaid") {
-      return <MermaidDiagram code={code} />;
+      return <MermaidDiagram code={code} isStreaming={isStreaming} />;
     }
 
     // Named language → syntax highlight
@@ -57,7 +58,7 @@ const mdComponents: Components = {
     // No language + looks like markdown table/text → re-render as markdown
     if (looksLikeMarkdown(code)) {
       return (
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={buildComponents(isStreaming)}>
           {code}
         </ReactMarkdown>
       );
@@ -127,7 +128,8 @@ const mdComponents: Components = {
   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
   em: ({ children }) => <em className="italic">{children}</em>,
   hr: () => <hr className="my-4 border-zinc-300 dark:border-zinc-700" />,
-};
+  };
+}
 
 export function RichContent({ content, isStreaming = false }: RichContentProps) {
   return (
@@ -135,7 +137,7 @@ export function RichContent({ content, isStreaming = false }: RichContentProps) 
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeRaw, rehypeKatex]}
-        components={mdComponents}
+        components={buildComponents(isStreaming)}
       >
         {content}
       </ReactMarkdown>
