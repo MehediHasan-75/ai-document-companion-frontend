@@ -9,6 +9,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import "katex/dist/katex.min.css";
 import type { Components } from "react-markdown";
+import { MermaidDiagram } from "./MermaidDiagram";
 
 interface RichContentProps {
   content: string;
@@ -27,6 +28,11 @@ const mdComponents: Components = {
   code({ className, children }) {
     const match = /language-(\w+)/.exec(className ?? "");
     const code = String(children).replace(/\n$/, "");
+
+    // Mermaid diagrams
+    if (match && match[1] === "mermaid") {
+      return <MermaidDiagram code={code} />;
+    }
 
     // Named language → syntax highlight
     if (match) {

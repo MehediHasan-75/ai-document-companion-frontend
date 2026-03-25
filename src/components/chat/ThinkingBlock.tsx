@@ -11,11 +11,13 @@ export function ThinkingBlock({ content, isStreaming }: ThinkingBlockProps) {
   const [open, setOpen] = useState(false);
   const wasStreamingRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef(true);
 
   // Auto-open when thinking starts; auto-close when answer starts
   useEffect(() => {
     if (isStreaming) {
       wasStreamingRef.current = true;
+      autoScrollRef.current = true;
       setOpen(true);
     } else if (wasStreamingRef.current) {
       wasStreamingRef.current = false;
@@ -23,10 +25,32 @@ export function ThinkingBlock({ content, isStreaming }: ThinkingBlockProps) {
     }
   }, [isStreaming]);
 
-  // Auto-scroll the thinking box to the bottom as tokens arrive
+  // Disable auto-scroll when user scrolls up; re-enable at bottom
   useEffect(() => {
-    if (isStreaming && scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    const el = scrollRef.current;
+    if (!el) return;
+    const onUserScrollIntent = () => { autoScrollRef.current = false; };
+    const onScroll = () => {
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) {
+        autoScrollRef.current = true;
+        if (isStreaming) el.scrollTop = el.scrollHeight;
+      }
+    };
+    el.addEventListener("wheel", onUserScrollIntent, { passive: true });
+    el.addEventListener("touchstart", onUserScrollIntent, { passive: true });
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("wheel", onUserScrollIntent);
+      el.removeEventListener("touchstart", onUserScrollIntent);
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, [isStreaming]);
+
+  // Auto-scroll as thinking tokens arrive
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (isStreaming && autoScrollRef.current && el) {
+      el.scrollTop = el.scrollHeight;
     }
   }, [content, isStreaming]);
 

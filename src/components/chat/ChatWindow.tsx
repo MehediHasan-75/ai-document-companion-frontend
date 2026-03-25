@@ -29,6 +29,9 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
 
   const [historyLoading, setHistoryLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const autoScrollRef = useRef(true);
+  const isStreamingRef = useRef(false);
   const loadedRef = useRef<string | null>(null);
 
   // Load message history when conversation changes
@@ -60,9 +63,39 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
       .finally(() => setHistoryLoading(false));
   }, [conversationId, setMessages]);
 
-  // Auto-scroll as tokens arrive
+  // Keep isStreamingRef in sync so scroll handler can read it without stale closure
+  useEffect(() => { isStreamingRef.current = isStreaming; }, [isStreaming]);
+
+  // Disable auto-scroll the moment the user touches the wheel/trackpad/touch,
+  // re-enable it only when they scroll back within 80px of the bottom.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const onUserScrollIntent = () => { autoScrollRef.current = false; };
+    const onScroll = () => {
+      if (el.scrollHeight - el.scrollTop - el.clientHeight < 80) {
+        autoScrollRef.current = true;
+        if (isStreamingRef.current) el.scrollTop = el.scrollHeight; // catch up during streaming only
+      }
+    };
+
+    el.addEventListener("wheel", onUserScrollIntent, { passive: true });
+    el.addEventListener("touchstart", onUserScrollIntent, { passive: true });
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("wheel", onUserScrollIntent);
+      el.removeEventListener("touchstart", onUserScrollIntent);
+      el.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+  // Auto-scroll as tokens arrive — instant so it can't fight user input
+  useEffect(() => {
+    const el = scrollContainerRef.current;
+    if (autoScrollRef.current && el) {
+      el.scrollTop = el.scrollHeight;
+    }
   }, [messages, partialContent, thinkingContent]);
 
   return (
@@ -78,7 +111,7 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-4 py-6 space-y-4">
         {historyLoading ? (
           <div className="space-y-4">
             <div className="flex justify-end"><Skeleton className="h-10 w-48 rounded-2xl" /></div>
