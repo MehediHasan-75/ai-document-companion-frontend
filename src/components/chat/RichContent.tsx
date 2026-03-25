@@ -23,6 +23,16 @@ function looksLikeMarkdown(code: string): boolean {
   return tableLines.length >= 2;
 }
 
+// Mermaid diagrams are often returned by the AI without an explicit ```mermaid
+// language tag — just a bare code fence or ```flowchart. Detect by the first
+// non-whitespace keyword of the block so they still render correctly.
+const MERMAID_KEYWORDS =
+  /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|stateDiagram-v2|erDiagram|gantt|pie|gitGraph|journey|mindmap|timeline|quadrantChart|xychart-beta|block-beta|architecture-beta)\b/i;
+
+function looksLikeMermaid(code: string): boolean {
+  return MERMAID_KEYWORDS.test(code.trimStart());
+}
+
 function buildComponents(isStreaming: boolean): Components {
   return {
   // Syntax-highlighted code blocks
@@ -30,8 +40,10 @@ function buildComponents(isStreaming: boolean): Components {
     const match = /language-(\w+)/.exec(className ?? "");
     const code = String(children).replace(/\n$/, "");
 
-    // Mermaid diagrams
-    if (match && match[1] === "mermaid") {
+    // Mermaid diagrams — explicit ```mermaid tag OR content-based detection.
+    // The AI frequently omits the language tag and just starts with "flowchart TD"
+    // etc., which caused the block to fall through to the plain code renderer.
+    if ((match && match[1] === "mermaid") || (!match && looksLikeMermaid(code))) {
       return <MermaidDiagram code={code} isStreaming={isStreaming} />;
     }
 
