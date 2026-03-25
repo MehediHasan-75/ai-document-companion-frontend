@@ -2,15 +2,15 @@ import { create } from "zustand";
 import type { Message } from "@/types/chat";
 
 interface ChatStore {
-  messages: Message[];
+  conversationMessages: Record<string, Message[]>;
   isStreaming: boolean;
   streamingConversationId: string | null;
   statusLabel: string;
   statusHistory: string[];
   partialContent: string;
   thinkingContent: string;
-  setMessages: (msgs: Message[]) => void;
-  addMessage: (msg: Message) => void;
+  setMessages: (conversationId: string, msgs: Message[]) => void;
+  addMessage: (conversationId: string, msg: Message) => void;
   setStreaming: (v: boolean, conversationId?: string) => void;
   setStatusLabel: (v: string) => void;
   appendPartial: (token: string) => void;
@@ -19,15 +19,24 @@ interface ChatStore {
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
-  messages: [],
+  conversationMessages: {},
   isStreaming: false,
   streamingConversationId: null,
   statusLabel: "",
   statusHistory: [],
   partialContent: "",
   thinkingContent: "",
-  setMessages: (messages) => set({ messages }),
-  addMessage: (msg) => set((s) => ({ messages: [...s.messages, msg] })),
+  setMessages: (conversationId, messages) =>
+    set((s) => ({
+      conversationMessages: { ...s.conversationMessages, [conversationId]: messages },
+    })),
+  addMessage: (conversationId, msg) =>
+    set((s) => ({
+      conversationMessages: {
+        ...s.conversationMessages,
+        [conversationId]: [...(s.conversationMessages[conversationId] ?? []), msg],
+      },
+    })),
   setStreaming: (isStreaming, conversationId) =>
     set({ isStreaming, streamingConversationId: isStreaming ? (conversationId ?? null) : null }),
   setStatusLabel: (statusLabel) =>

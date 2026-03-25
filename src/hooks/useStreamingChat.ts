@@ -4,10 +4,14 @@ import { parseSSEChunk } from "@/utils/sse";
 import { useChatStore } from "@/store/chatStore";
 import type { Message } from "@/types/chat";
 
+// Module-level so any hook instance (any chat page) can cancel the in-flight stream.
+let activeController: AbortController | null = null;
+
 export function useStreamingChat(conversationId: string, docId?: string) {
   const {
-    messages,
+    conversationMessages,
     isStreaming,
+    streamingConversationId,
     statusLabel,
     statusHistory,
     partialContent,
@@ -21,7 +25,10 @@ export function useStreamingChat(conversationId: string, docId?: string) {
     clearPartial,
   } = useChatStore();
 
-  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null);
+  // Messages and streaming state scoped to this conversation
+  const messages = conversationMessages[conversationId] ?? [];
+  const thisConversationIsStreaming = isStreaming && streamingConversationId === conversationId;
+
   const bufferRef = useRef("");
 
   const processEvents = useCallback(
@@ -41,9 +48,10 @@ export function useStreamingChat(conversationId: string, docId?: string) {
             content: event.content,
             thinking,
             sources: event.sources,
+            images: event.images,
             created_at: new Date().toISOString(),
           };
-          addMessage(assistantMsg);
+          addMessage(conversationId, assistantMsg);
           clearPartial();
           setStreaming(false);
         } else if (event.type === "error") {
@@ -53,17 +61,22 @@ export function useStreamingChat(conversationId: string, docId?: string) {
             content: `Error: ${event.content}`,
             created_at: new Date().toISOString(),
           };
-          addMessage(errorMsg);
+          addMessage(conversationId, errorMsg);
           clearPartial();
           setStreaming(false);
         }
       }
     },
-    [addMessage, appendPartial, appendThinking, clearPartial, setStatusLabel, setStreaming]
+    [conversationId, addMessage, appendPartial, appendThinking, clearPartial, setStatusLabel, setStreaming]
   );
 
   const sendMessage = useCallback(
     async (question: string) => {
+      // Cancel any in-flight stream from any conversation before starting a new one
+      activeController?.abort();
+      activeController = new AbortController();
+      const { signal } = activeController;
+
       // Optimistically add user message
       const userMsg: Message = {
         id: crypto.randomUUID(),
@@ -71,7 +84,7 @@ export function useStreamingChat(conversationId: string, docId?: string) {
         content: question,
         created_at: new Date().toISOString(),
       };
-      addMessage(userMsg);
+      addMessage(conversationId, userMsg);
       setStreaming(true, conversationId);
       setStatusLabel("Connecting…");
       clearPartial();
@@ -90,13 +103,13 @@ export function useStreamingChat(conversationId: string, docId?: string) {
               question,
               ...(docId ? { doc_ids: [docId] } : {}),
             }),
+            signal,
           }
         );
 
         if (!response.body) throw new Error("No response body");
 
         const reader = response.body.getReader();
-        readerRef.current = reader;
         const decoder = new TextDecoder();
 
         while (true) {
@@ -118,6 +131,12 @@ export function useStreamingChat(conversationId: string, docId?: string) {
           bufferRef.current = "";
         }
       } catch (err: unknown) {
+        // Abort is intentional — don't show an error message
+        if (err instanceof Error && err.name === "AbortError") {
+          clearPartial();
+          setStreaming(false);
+          return;
+        }
         const text = err instanceof Error ? err.message : "Something went wrong";
         const errorMsg: Message = {
           id: crypto.randomUUID(),
@@ -125,7 +144,7 @@ export function useStreamingChat(conversationId: string, docId?: string) {
           content: `Error: ${text}`,
           created_at: new Date().toISOString(),
         };
-        addMessage(errorMsg);
+        addMessage(conversationId, errorMsg);
         clearPartial();
         setStreaming(false);
       }
@@ -134,20 +153,20 @@ export function useStreamingChat(conversationId: string, docId?: string) {
   );
 
   const abort = useCallback(() => {
-    readerRef.current?.cancel();
-    readerRef.current = null;
+    activeController?.abort();
+    activeController = null;
     clearPartial();
     setStreaming(false);
   }, [clearPartial, setStreaming]);
 
   return {
     messages,
-    isStreaming,
+    isStreaming: thisConversationIsStreaming,
     statusLabel,
     statusHistory,
     partialContent,
     thinkingContent,
-    setMessages,
+    setMessages: (msgs: Message[]) => setMessages(conversationId, msgs),
     sendMessage,
     abort,
   };

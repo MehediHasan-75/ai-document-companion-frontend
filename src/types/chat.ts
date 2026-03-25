@@ -3,6 +3,7 @@ export interface Source {
   type: "text" | "table" | "image";
   summary: string;
   original: string;
+  image_base64?: string;
 }
 
 export interface Message {
@@ -11,6 +12,7 @@ export interface Message {
   content: string;
   thinking?: string;
   sources?: Source[];
+  images?: string[];
   created_at: string;
 }
 
@@ -27,5 +29,5 @@ export type SSEEvent =
   | { type: "status";   content: string }
   | { type: "thinking"; content: string }
   | { type: "delta";    content: string }
-  | { type: "complete"; content: string; conversation_id: string; sources: Source[] }
+  | { type: "complete"; content: string; conversation_id: string; sources: Source[]; images?: string[] }
   | { type: "error";    content: string };

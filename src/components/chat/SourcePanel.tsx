@@ -3,34 +3,6 @@
 import { useState } from "react";
 import type { Source } from "@/types/chat";
 
-interface ImagePreviewProps {
-  src: string;
-  alt: string;
-}
-
-function ImagePreview({ src, alt }: ImagePreviewProps) {
-  const [errored, setErrored] = useState(false);
-
-  if (errored) {
-    return (
-      <p className="text-xs text-zinc-500 dark:text-zinc-400 italic">
-        Image could not be loaded.
-      </p>
-    );
-  }
-
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={alt}
-      onError={() => setErrored(true)}
-      className="mt-1 max-w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
-      loading="lazy"
-    />
-  );
-}
-
 interface SourcePanelProps {
   sources: Source[];
 }
@@ -95,9 +67,15 @@ export function SourcePanel({ sources }: SourcePanelProps) {
                 </p>
               )}
 
-              {/* Original content preview */}
-              {src.type === "image" ? (
-                <ImagePreview src={src.original} alt={src.summary} />
+              {/* Original content / image preview */}
+              {src.type === "image" && src.image_base64 ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={src.image_base64}
+                  alt={src.summary}
+                  className="mt-1 max-w-full rounded-lg border border-zinc-200 dark:border-zinc-700"
+                  loading="lazy"
+                />
               ) : (
                 <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-4 leading-relaxed">
                   {src.original}

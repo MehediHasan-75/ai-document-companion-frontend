@@ -36,22 +36,29 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
     if (loadedRef.current === conversationId) return;
     loadedRef.current = conversationId;
 
-    // If user navigated away and back to the same conversation mid-stream,
-    // the background fetch is still running — don't abort or reload history.
-    const { isStreaming, streamingConversationId } = useChatStore.getState();
-    if (isStreaming && streamingConversationId === conversationId) return;
+    // If this conversation is still streaming in the background, just show
+    // what's already in the store — history is up to date and stream is live.
+    const { isStreaming, streamingConversationId, conversationMessages } = useChatStore.getState();
+    if (isStreaming && streamingConversationId === conversationId) {
+      setHistoryLoading(false);
+      return;
+    }
 
-    // Cancel any in-flight stream from a different conversation
-    abort();
+    // If we already have messages cached for this conversation, use them
+    // immediately (no flash of empty state) while silently refreshing in background.
+    const cached = conversationMessages[conversationId];
+    if (cached && cached.length > 0) {
+      setHistoryLoading(false);
+    } else {
+      setHistoryLoading(true);
+    }
 
-    setHistoryLoading(true);
-    setMessages([]);
     conversationsApi
       .messages(conversationId)
       .then(setMessages)
       .catch(() => setMessages([]))
       .finally(() => setHistoryLoading(false));
-  }, [conversationId, setMessages, abort]);
+  }, [conversationId, setMessages]);
 
   // Auto-scroll as tokens arrive
   useEffect(() => {
