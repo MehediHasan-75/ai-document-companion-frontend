@@ -228,7 +228,7 @@ Please follow the existing conventions: TypeScript strict mode, Tailwind utility
 ## Author
 
 **Mehedi Hasan**
-[GitHub](https://github.com/MehediHasan-75) · [LinkedIn](https://linkedin.com/in/your-profile)
+[GitHub](https://github.com/MehediHasan-75) · [LinkedIn](https://www.linkedin.com/in/mehedi-hasan-075379206/)
 
 ---
 
