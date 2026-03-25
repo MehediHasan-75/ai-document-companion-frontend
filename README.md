@@ -26,14 +26,12 @@ What sets this apart from a standard chatbot UI:
 
 ## Screenshots
 
-> Replace placeholders with actual screenshots or a demo GIF.
-
 | Screen | Preview |
 |--------|---------|
-| Dashboard — file library & upload | `docs/screenshots/dashboard.png` |
-| Chat — streaming answer with citations | `docs/screenshots/chat-streaming.png` |
-| Chat — Mermaid diagram rendered inline | `docs/screenshots/chat-mermaid.png` |
-| ThinkingBlock — expanded reasoning panel | `docs/screenshots/thinking-block.png` |
+| Dashboard — file library & upload | ![Dashboard](docs/screenshots/dashboard.png) |
+| Chat — streaming answer with citations | ![Chat streaming](docs/screenshots/chat-streaming.png) |
+| Chat — Mermaid diagram rendered inline | ![Mermaid diagram](docs/screenshots/chat-mermaid.png) |
+| ThinkingBlock — expanded reasoning panel | ![ThinkingBlock](docs/screenshots/thinking-block.png) |
 
 ---
 
