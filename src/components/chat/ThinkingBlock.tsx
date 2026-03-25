@@ -13,7 +13,15 @@ export function ThinkingBlock({ content, isStreaming }: ThinkingBlockProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef(true);
 
-  // Auto-open when thinking starts; auto-close when answer starts
+  // rAF handle — same coalescing strategy as ChatWindow.
+  const rafRef = useRef<number | null>(null);
+  // Prevents our programmatic scrollTop write from re-triggering the onScroll handler.
+  const isProgrammaticScrollRef = useRef(false);
+
+  // Auto-open when thinking starts; auto-close when answer starts.
+  // Reset autoScroll to true on every new thinking session so the panel
+  // starts tracking the bottom even if the user had scrolled up in a
+  // previous session.
   useEffect(() => {
     if (isStreaming) {
       wasStreamingRef.current = true;
@@ -25,17 +33,28 @@ export function ThinkingBlock({ content, isStreaming }: ThinkingBlockProps) {
     }
   }, [isStreaming]);
 
-  // Disable auto-scroll when user scrolls up; re-enable at bottom
+  // Scroll listeners for the thinking panel's own scroll container.
+  // Mirrors the ChatWindow approach: read position one frame after wheel/touch
+  // to avoid the race where scrollTop hasn't updated yet.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
-    const onUserScrollIntent = () => { autoScrollRef.current = false; };
-    const onScroll = () => {
-      if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) {
-        autoScrollRef.current = true;
-        if (isStreaming) el.scrollTop = el.scrollHeight;
-      }
+
+    const onUserScrollIntent = () => {
+      requestAnimationFrame(() => {
+        const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+        if (distFromBottom > 40) autoScrollRef.current = false;
+      });
     };
+
+    const onScroll = () => {
+      if (isProgrammaticScrollRef.current) return;
+      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      // Re-enable when user scrolls back to within 40px of the bottom.
+      // No direct scrollTop write here — the rAF effect below handles that.
+      autoScrollRef.current = distFromBottom <= 40;
+    };
+
     el.addEventListener("wheel", onUserScrollIntent, { passive: true });
     el.addEventListener("touchstart", onUserScrollIntent, { passive: true });
     el.addEventListener("scroll", onScroll, { passive: true });
@@ -43,15 +62,26 @@ export function ThinkingBlock({ content, isStreaming }: ThinkingBlockProps) {
       el.removeEventListener("wheel", onUserScrollIntent);
       el.removeEventListener("touchstart", onUserScrollIntent);
       el.removeEventListener("scroll", onScroll);
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [isStreaming, open]);
+  }, [open]); // re-register when panel opens (new DOM node mounts)
 
-  // Auto-scroll as thinking tokens arrive
+  // Coalesced auto-scroll for thinking tokens.
+  // Same rAF batching as ChatWindow: one DOM write per frame regardless of how
+  // many thinking tokens arrive within that frame.
   useEffect(() => {
-    const el = scrollRef.current;
-    if (isStreaming && autoScrollRef.current && el) {
+    if (!isStreaming || !autoScrollRef.current) return;
+    if (rafRef.current !== null) return; // already queued
+
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const el = scrollRef.current;
+      if (!el || !autoScrollRef.current) return;
+
+      isProgrammaticScrollRef.current = true;
       el.scrollTop = el.scrollHeight;
-    }
+      requestAnimationFrame(() => { isProgrammaticScrollRef.current = false; });
+    });
   }, [content, isStreaming]);
 
   if (!content) return null;
