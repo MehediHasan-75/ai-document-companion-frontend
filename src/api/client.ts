@@ -19,7 +19,12 @@ api.interceptors.response.use(
       err.response?.status === 401
     ) {
       clearToken();
-      window.location.href = "/login";
+      if (
+        !window.location.pathname.startsWith("/login") &&
+        !window.location.pathname.startsWith("/register")
+      ) {
+        window.location.href = "/login";
+      }
     }
     return Promise.reject(err);
   }
