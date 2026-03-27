@@ -156,7 +156,7 @@ export function FileCard({ file }: FileCardProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
-          {status === "uploaded" && (
+          {(status === "uploaded" || status === "failed") && (
             <button
               onClick={handleProcess}
               className="px-3 py-1.5 text-xs font-medium text-primary border border-primary rounded-lg hover:bg-primary hover:text-white transition-colors"

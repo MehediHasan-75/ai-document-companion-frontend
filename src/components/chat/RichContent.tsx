@@ -143,6 +143,16 @@ function buildComponents(isStreaming: boolean): Components {
   };
 }
 
+// Claude (and many LLMs) emit LaTeX in \[...\] / \(...\) style.
+// remark-math only recognises $$...$$ / $...$, so normalise before parsing.
+function normalizeLatex(content: string): string {
+  return content
+    .replace(/\\\[/g, "$$")
+    .replace(/\\\]/g, "$$")
+    .replace(/\\\(/g, "$")
+    .replace(/\\\)/g, "$");
+}
+
 export function RichContent({ content, isStreaming = false }: RichContentProps) {
   return (
     <div className="text-sm text-zinc-900 dark:text-zinc-100 max-w-none">
@@ -151,7 +161,7 @@ export function RichContent({ content, isStreaming = false }: RichContentProps) 
         rehypePlugins={[rehypeRaw, rehypeKatex]}
         components={buildComponents(isStreaming)}
       >
-        {content}
+        {normalizeLatex(content)}
       </ReactMarkdown>
     </div>
   );

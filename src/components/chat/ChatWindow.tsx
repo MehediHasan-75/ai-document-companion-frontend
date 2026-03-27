@@ -113,15 +113,24 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
     };
 
     const onScroll = () => {
-      // Ignore events we triggered ourselves — they carry no intent signal.
-      if (isProgrammaticScrollRef.current) return;
-
       const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
 
-      // Re-enable auto-scroll when the user manually scrolls back near the bottom.
-      // We do NOT forcibly snap to the bottom here; the next token's useEffect will
-      // do that via scheduleScrollToBottom, keeping all DOM writes in one place.
-      autoScrollRef.current = distFromBottom <= 80;
+      // Re-enable auto-scroll whenever the viewport is near the bottom — even if
+      // the event was triggered by our own programmatic scroll. This is safe:
+      // programmatic scrolls always land at the bottom (distFromBottom ≈ 0), so
+      // they will correctly keep autoScroll enabled. The only case we gate on
+      // isProgrammaticScrollRef is when we would *disable* auto-scroll, so that a
+      // user who has genuinely scrolled up is not accidentally re-locked by a
+      // simultaneous programmatic scroll event at an intermediate position.
+      if (distFromBottom <= 80) {
+        autoScrollRef.current = true;
+        return;
+      }
+
+      // Ignore upward-scroll events we triggered ourselves — they carry no intent signal.
+      if (isProgrammaticScrollRef.current) return;
+
+      autoScrollRef.current = false;
     };
 
     el.addEventListener("wheel", onUserScrollIntent, { passive: true });
@@ -162,7 +171,7 @@ export function ChatWindow({ conversationId, docId }: ChatWindowProps) {
       // One rAF is enough — scroll events are synchronous with the frame.
       requestAnimationFrame(() => { isProgrammaticScrollRef.current = false; });
     });
-  }, [messages, partialContent, thinkingContent]);
+  }, [messages, partialContent, thinkingContent, statusHistory]);
 
   return (
     <div className="flex flex-col h-full">
